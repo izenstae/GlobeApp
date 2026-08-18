@@ -1,0 +1,177 @@
+# Canonical weapon keys -> alias lists. Word-boundary matched, case-insensitive.
+# Aliases cover designation variants, NATO reporting names, and transliterations.
+
+- key: iskander_m
+  display_name: 9K720 Iskander-M
+  category: ballistic_missile
+  aliases: [iskander, iskander-m, 9k720, ss-26, ss-26 stone, искандер]
+
+- key: kinzhal
+  display_name: Kh-47M2 Kinzhal
+  category: ballistic_missile
+  aliases: [kinzhal, kh-47, kh-47m2, killjoy, кинжал]
+
+- key: atacms
+  display_name: MGM-140 ATACMS
+  category: ballistic_missile
+  aliases: [atacms, mgm-140]
+
+- key: tochka_u
+  display_name: OTR-21 Tochka-U
+  category: ballistic_missile
+  aliases: [tochka, tochka-u, otr-21, ss-21, scarab, точка-у]
+
+- key: kalibr
+  display_name: 3M-54 Kalibr
+  category: cruise_missile
+  aliases: [kalibr, 3m-54, 3m54, sizzler, калибр]
+
+- key: kh_101
+  display_name: Kh-101
+  category: cruise_missile
+  aliases: [kh-101, kh101, x-101, х-101]
+
+- key: storm_shadow
+  display_name: Storm Shadow / SCALP-EG
+  category: cruise_missile
+  aliases: [storm shadow, scalp, scalp-eg]
+
+- key: taurus
+  display_name: Taurus KEPD 350
+  category: cruise_missile
+  aliases: [taurus, kepd 350]
+
+- key: zircon
+  display_name: 3M22 Zircon
+  category: cruise_missile
+  aliases: [zircon, tsirkon, 3m22, циркон]
+
+- key: oniks
+  display_name: P-800 Oniks
+  category: cruise_missile
+  aliases: [oniks, onyx, p-800, yakhont, оникс]
+
+- key: shahed_136
+  display_name: Shahed-136 / Geran-2
+  category: loitering_munition
+  aliases: [shahed, shahed-136, shahed-131, geran, geran-2, герань]
+
+- key: lancet
+  display_name: ZALA Lancet
+  category: loitering_munition
+  aliases: [lancet, ланцет]
+
+- key: bayraktar_tb2
+  display_name: Bayraktar TB2
+  category: uav
+  aliases: [bayraktar, tb2, tb-2]
+
+- key: fpv_drone
+  display_name: FPV attack drone
+  category: uav
+  aliases: [fpv drone, fpv drones, first-person view drone]
+
+- key: himars
+  display_name: M142 HIMARS
+  category: rocket_artillery
+  aliases: [himars, m142]
+
+- key: mlrs_m270
+  display_name: M270 MLRS
+  category: rocket_artillery
+  aliases: [m270, mlrs m270]
+
+- key: grad
+  display_name: BM-21 Grad
+  category: rocket_artillery
+  aliases: [grad, bm-21, bm21, град]
+
+- key: smerch
+  display_name: BM-30 Smerch
+  category: rocket_artillery
+  aliases: [smerch, bm-30, 9k58, смерч]
+
+- key: uragan
+  display_name: BM-27 Uragan
+  category: rocket_artillery
+  aliases: [uragan, bm-27, 9p140, ураган]
+
+- key: tos_1
+  display_name: TOS-1A Solntsepyok
+  category: thermobaric
+  aliases: [tos-1, tos-1a, solntsepyok, солнцепёк]
+
+- key: fab_glide
+  display_name: FAB glide bomb (UMPK)
+  category: glide_bomb
+  aliases: [fab-250, fab-500, fab-1500, fab-3000, umpk, glide bomb, kab]
+
+- key: m777
+  display_name: M777 howitzer
+  category: tube_artillery
+  aliases: [m777]
+
+- key: caesar
+  display_name: CAESAR self-propelled howitzer
+  category: tube_artillery
+  aliases: [caesar howitzer, caesar self-propelled]
+
+- key: krab
+  display_name: AHS Krab
+  category: tube_artillery
+  aliases: [krab, ahs krab]
+
+- key: msta_s
+  display_name: 2S19 Msta-S
+  category: tube_artillery
+  aliases: [msta, msta-s, 2s19, мста]
+
+- key: javelin
+  display_name: FGM-148 Javelin
+  category: atgm
+  aliases: [javelin, fgm-148]
+
+- key: nlaw
+  display_name: NLAW
+  category: atgm
+  aliases: [nlaw]
+
+- key: kornet
+  display_name: 9M133 Kornet
+  category: atgm
+  aliases: [kornet, 9m133, корнет]
+
+- key: patriot
+  display_name: MIM-104 Patriot
+  category: air_defense
+  aliases: [patriot, mim-104]
+
+- key: s_300
+  display_name: S-300
+  category: air_defense
+  aliases: [s-300, s300, с-300]
+
+- key: s_400
+  display_name: S-400 Triumf
+  category: air_defense
+  aliases: [s-400, s400, triumf, с-400]
+
+- key: qassam
+  display_name: Qassam rocket
+  category: rocket_artillery
+  aliases: [qassam, kassam]
+
+- key: katyusha
+  display_name: Katyusha rocket
+  category: rocket_artillery
+  aliases: [katyusha, катюша]
+
+- key: fajr_5
+  display_name: Fajr-5
+  category: rocket_artillery
+  aliases: [fajr-5, fajr 5]
+
+- key: hwasong
+  display_name: Hwasong-series ballistic missile
+  category: ballistic_missile
+  aliases: [hwasong, hwasong-11, kn-23, kn23]
