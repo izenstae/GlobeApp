@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        files: ^frontend/.*\.(ts|tsx|css|json)$
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: block-large-files
+        name: reject staged files over 5MB (catches accidental data commits)
+        entry: bash -c 'for f in "$@"; do if [ -f "$f" ] && [ $(stat -c%s "$f") -gt 5242880 ]; then echo "REFUSED: $f exceeds 5MB"; exit 1; fi; done' --
+        language: system
