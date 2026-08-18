@@ -4,7 +4,6 @@ The backend publishes to a Redis channel when a new cluster is created or an
 existing cluster grows materially; this endpoint fans that channel out to
 browsers. Each message carries the full event payload."""
 
-import asyncio
 import logging
 from collections.abc import AsyncIterator
 from typing import Any
@@ -31,15 +30,11 @@ async def stream_events(request: Request) -> EventSourceResponse:
             while True:
                 if await request.is_disconnected():
                     break
-                try:
-                    message = await asyncio.wait_for(
-                        pubsub.get_message(ignore_subscribe_messages=True),
-                        timeout=HEARTBEAT_SECONDS,
-                    )
-                except TimeoutError:
-                    yield {"event": "heartbeat", "data": ""}
-                    continue
+                message = await pubsub.get_message(
+                    ignore_subscribe_messages=True, timeout=HEARTBEAT_SECONDS
+                )
                 if message is None:
+                    yield {"event": "heartbeat", "data": ""}
                     continue
                 data = message["data"]
                 if isinstance(data, bytes):

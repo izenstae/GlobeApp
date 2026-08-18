@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #14181d;
+}
+
+/* Card slides in from the right, 250ms. Under prefers-reduced-motion it fades. */
+.card-in {
+  animation: card-slide 250ms ease-out;
+}
+
+@keyframes card-slide {
+  from {
+    transform: translateX(2rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-in {
+    animation: card-fade 200ms ease-out;
+  }
+  @keyframes card-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
