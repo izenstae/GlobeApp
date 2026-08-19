@@ -1,0 +1,78 @@
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: globe
+          POSTGRES_PASSWORD: globe
+          POSTGRES_DB: globe
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U globe -d globe"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql+asyncpg://globe:globe@localhost:5432/globe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Generate CI encryption key
+        run: |
+          echo "CREDENTIAL_ENCRYPTION_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" >> "$GITHUB_ENV"
+      - name: Migrations apply from empty
+        working-directory: backend
+        run: alembic upgrade head
+      - name: Lint
+        working-directory: backend
+        run: ruff check app tests
+      - name: Typecheck
+        working-directory: backend
+        run: mypy app
+      - name: Tests (all provider HTTP mocked; no live feed calls)
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://globe:globe@localhost:5432/globe_test
+        run: pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+      - name: Typecheck and build
+        working-directory: frontend
+        run: npm run build
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,41 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+credentials.json
+
+# Source data (see docs/BUILD_BRIEF.md 12.1 - redistribution restrictions)
+data/
+*.csv
+*.tsv
+*.parquet
+dumps/
+*.sql.gz
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# Models
+models/*.bin
+models/*.safetensors
+*.pt
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
