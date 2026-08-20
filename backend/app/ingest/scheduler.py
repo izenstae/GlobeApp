@@ -17,6 +17,7 @@ from app.db import get_session_factory
 from app.ingest.acled import AcledIngester
 from app.ingest.firms import FirmsIngester
 from app.ingest.gdelt import GdeltIngester
+from app.ingest.ucdp import UcdpIngester
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ async def build_scheduler() -> AsyncIOScheduler:
     acled = AcledIngester(session_factory, ProviderClient("acled", manager, http), redis)
     gdelt = GdeltIngester(session_factory, http, redis)
     firms = FirmsIngester(session_factory, manager, http, redis)
+    ucdp = UcdpIngester(session_factory, http, redis)
 
     scheduler = AsyncIOScheduler(timezone=UTC)
 
@@ -88,6 +90,15 @@ async def build_scheduler() -> AsyncIOScheduler:
         seconds=settings.firms_interval,
         id="ingest_firms",
         next_run_time=datetime.now(UTC) + timedelta(seconds=20),
+        max_instances=1,
+        coalesce=True,
+    )
+    scheduler.add_job(
+        ucdp.run_once,
+        "interval",
+        seconds=settings.ucdp_interval,
+        id="ingest_ucdp",
+        next_run_time=datetime.now(UTC) + timedelta(seconds=40),
         max_instances=1,
         coalesce=True,
     )

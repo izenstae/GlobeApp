@@ -75,8 +75,9 @@ def events_match(a: Event, b: Event, distance_m: float) -> bool:
     return pair_a is not None and pair_a == pair_b
 
 
-# Source tier for representative selection; ACLED is the curated source.
-SOURCE_TIER = {"acled": 1.0, "gdelt": 0.4, "firms": 0.0}
+# Source tier for representative selection; ACLED is the curated source and
+# stays canonical (its actor names are the vocabulary); UCDP just below it.
+SOURCE_TIER = {"acled": 1.0, "ucdp": 0.9, "gdelt": 0.4, "firms": 0.0}
 
 
 def _member_rank(member: Event) -> tuple[float, float]:

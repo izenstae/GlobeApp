@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     acled_interval: int = 6 * 3600
     gdelt_interval: int = 15 * 60
     firms_interval: int = 3 * 3600
+    ucdp_interval: int = 7 * 24 * 3600  # monthly candidate releases; weekly check is plenty
+
+    # UCDP GED baseline (brief §6.4). Version is the GED API release tag.
+    ucdp_api_version: str = "25.1"
+    ucdp_window_days: int = 365  # first-pull historical baseline depth
 
     # Proactive credential refresh
     credential_refresh_interval: int = 15 * 60

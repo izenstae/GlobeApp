@@ -91,6 +91,30 @@ export function isOnScreen(pov: Pov, lat: number, lng: number): boolean {
   return angularDeg < visible;
 }
 
+/** Cross-border strike arc: origin is a country-level inference from actor
+ * attribution, so the arc is dashed and faint at the origin end, and it is
+ * static — the camera flight is the entire motion budget. */
+export interface StrikeArc {
+  startLat: number;
+  startLng: number;
+  endLat: number;
+  endLng: number;
+  event: EventLite;
+}
+
+export const ARC_GRADIENT = [`rgba(${SIGNAL_RGB},0.06)`, `rgba(${SIGNAL_RGB},0.38)`];
+
+export function strikeArc(event: EventLite): StrikeArc | null {
+  if (event.origin_lat === null || event.origin_lon === null) return null;
+  return {
+    startLat: event.origin_lat,
+    startLng: event.origin_lon,
+    endLat: event.lat,
+    endLng: event.lon,
+    event,
+  };
+}
+
 export interface ImpactRing {
   lat: number;
   lng: number;

@@ -26,6 +26,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Event, EventWeapon
+from app.pipeline.origin import infer_origin
 
 logger = logging.getLogger(__name__)
 
@@ -151,11 +152,16 @@ async def enrich_event(session: AsyncSession, event: Event) -> None:
         for hit in extract_weapons(event_text):
             session.add(EventWeapon(event_id=event.id, **hit))
 
-    if event.source == "acled":
+    if event.source in ("acled", "ucdp"):
         # ACLED is the canonical vocabulary; its names map to themselves.
+        # UCDP side names follow the same conventions and are kept curated.
         event.actor_a_canonical = event.actor_a
         event.actor_b_canonical = event.actor_b
     else:
         vocabulary = await acled_actor_vocabulary(session)
         event.actor_a_canonical = canonicalize_actor(event.actor_a, vocabulary)
         event.actor_b_canonical = canonicalize_actor(event.actor_b, vocabulary)
+
+    # Cross-border strike origin (arc rendering); runs after canonicalization
+    # because the inference reads the canonical actor name first.
+    infer_origin(event)

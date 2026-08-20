@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { STREAM_URL } from "../api";
-import { useStore } from "../store";
+import { passesServerFilters, useStore } from "../store";
 import type { EventFull } from "../types";
 import { EventQueue } from "./EventQueue";
 
@@ -24,6 +24,10 @@ export function useEventStream(queue: EventQueue): void {
       } catch {
         return;
       }
+      // Events excluded by the active server-side filters neither plot nor
+      // fly the camera; they arrive again on the next filtered refetch if the
+      // filter changes.
+      if (!passesServerFilters(useStore.getState(), event)) return;
       upsertLive(event);
       queueRef.current.enqueue(event);
     });

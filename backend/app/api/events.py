@@ -22,12 +22,22 @@ def _parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:
     return (min_lon, min_lat, max_lon, max_lat)
 
 
+# Filters that must hold if ANY member of the cluster satisfies them: weapons
+# and actors usually live on non-representative members (a GDELT article names
+# the weapon, ACLED names the actors), so matching only the representative row
+# would silently drop corroborated events.
+_MEMBER_SCOPE = "(m.id = e.id OR (e.cluster_id IS NOT NULL AND m.cluster_id = e.cluster_id))"
+
+
 @router.get("/events")
 async def list_events(
     bbox: str | None = Query(None, description="minLon,minLat,maxLon,maxLat"),
     since: datetime | None = None,
     until: datetime | None = None,
     category: list[str] | None = Query(None),
+    country: list[str] | None = Query(None, description="exact country names, case-insensitive"),
+    actor: str | None = Query(None, min_length=2, description="substring, raw or canonical"),
+    weapon: list[str] | None = Query(None, description="canonical weapon keys"),
     min_reliability: float | None = Query(None, ge=0, le=1),
     limit: int = Query(2000, le=10000),
     session: AsyncSession = Depends(get_session),
@@ -46,12 +56,37 @@ async def list_events(
         "e.occurred_at >= :since",
     ]
     params: dict[str, Any] = {"since": since, "limit": limit}
+    expanding: list[str] = []
     if until is not None:
         clauses.append("e.occurred_at <= :until")
         params["until"] = until
     if category:
         clauses.append("e.category IN :categories")
         params["categories"] = category
+        expanding.append("categories")
+    if country:
+        clauses.append("lower(e.country) IN :countries")
+        params["countries"] = [c.strip().lower() for c in country]
+        expanding.append("countries")
+    if actor:
+        clauses.append(
+            f"""EXISTS (
+                SELECT 1 FROM events m WHERE {_MEMBER_SCOPE}
+                AND (m.actor_a ILIKE :actor_pat OR m.actor_b ILIKE :actor_pat
+                     OR m.actor_a_canonical ILIKE :actor_pat
+                     OR m.actor_b_canonical ILIKE :actor_pat)
+            )"""
+        )
+        params["actor_pat"] = f"%{actor.strip()}%"
+    if weapon:
+        clauses.append(
+            f"""EXISTS (
+                SELECT 1 FROM event_weapons w JOIN events m ON m.id = w.event_id
+                WHERE {_MEMBER_SCOPE} AND w.weapon_key IN :weapon_keys
+            )"""
+        )
+        params["weapon_keys"] = weapon
+        expanding.append("weapon_keys")
     if min_reliability is not None:
         clauses.append("COALESCE(e.reliability, 0) >= :min_reliability")
         params["min_reliability"] = min_reliability
@@ -69,7 +104,10 @@ async def list_events(
                e.fatalities, e.reliability, e.headline,
                COALESCE(c.member_count, 1) AS source_count,
                COALESCE(c.thermal_corroborated, false) AS thermal_corroborated,
-               ST_Y(e.geom::geometry) AS lat, ST_X(e.geom::geometry) AS lon
+               ST_Y(e.geom::geometry) AS lat, ST_X(e.geom::geometry) AS lon,
+               ST_Y(e.origin_geom::geometry) AS origin_lat,
+               ST_X(e.origin_geom::geometry) AS origin_lon,
+               e.origin_country, e.origin_precision, e.origin_method, e.origin_confidence
         FROM events e
         LEFT JOIN event_clusters c ON c.id = e.cluster_id
         WHERE {" AND ".join(clauses)}
@@ -77,10 +115,47 @@ async def list_events(
         LIMIT :limit
         """
     )
-    if category:
-        stmt = stmt.bindparams(bindparam("categories", expanding=True))
+    for name in expanding:
+        stmt = stmt.bindparams(bindparam(name, expanding=True))
     rows = (await session.execute(stmt, params)).mappings().all()
     return {"events": [dict(r) for r in rows], "count": len(rows)}
+
+
+@router.get("/meta/filters")
+async def filter_metadata(session: AsyncSession = Depends(get_session)) -> dict[str, Any]:
+    """Vocabulary the filter panel offers: only values that actually occur in
+    the ingested data — the UI never presents options the data cannot satisfy."""
+    countries = [
+        r[0]
+        for r in await session.execute(
+            text(
+                "SELECT country FROM events WHERE country IS NOT NULL "
+                "GROUP BY country ORDER BY count(*) DESC, country LIMIT 300"
+            )
+        )
+    ]
+    actors = [
+        r[0]
+        for r in await session.execute(
+            text(
+                "SELECT actor FROM ("
+                "  SELECT COALESCE(actor_a_canonical, actor_a) AS actor FROM events"
+                "  UNION ALL SELECT COALESCE(actor_b_canonical, actor_b) FROM events"
+                ") t WHERE actor IS NOT NULL "
+                "GROUP BY actor ORDER BY count(*) DESC, actor LIMIT 300"
+            )
+        )
+    ]
+    weapons = [
+        {"weapon_key": r[0], "display_name": r[1], "event_count": r[2]}
+        for r in await session.execute(
+            text(
+                "SELECT weapon_key, min(display_name), count(DISTINCT event_id) "
+                "FROM event_weapons GROUP BY weapon_key ORDER BY 3 DESC, 1"
+            )
+        )
+    ]
+    return {"countries": countries, "actors": actors, "weapons": weapons}
 
 
 @router.get("/events/{event_id}")

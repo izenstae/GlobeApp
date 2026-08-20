@@ -227,3 +227,78 @@ def normalize_gdelt(cols: list[str]) -> UnifiedEvent | None:
         source_urls=[url] if url else [],
         raw_payload=raw_payload,
     ).with_default_radius()
+
+
+# ---------------------------------------------------------------------- UCDP
+
+# UCDP GED where_prec: 1 exact location, 2 within ~25km, 3 second-order admin,
+# 4 first-order admin, 5 linear feature / between points, 6 country, 7 event in
+# international waters or airspace.
+UCDP_WHERE_PRECISION = {
+    1: "settlement",
+    2: "admin2",
+    3: "admin2",
+    4: "admin1",
+    5: "admin1",
+    6: "country",
+    7: "country",
+}
+
+# type_of_violence: 1 state-based armed conflict, 2 non-state conflict,
+# 3 one-sided violence against civilians. UCDP does not code the kinetic mode,
+# so the category stays generic and the raw label is preserved.
+UCDP_VIOLENCE_TYPE = {1: "state-based conflict", 2: "non-state conflict", 3: "one-sided violence"}
+UCDP_VIOLENCE_CATEGORY = {1: "ground_assault", 2: "ground_assault", 3: "other_violence"}
+
+
+def normalize_ucdp(row: dict[str, Any]) -> UnifiedEvent | None:
+    try:
+        lat = float(row["latitude"])
+        lon = float(row["longitude"])
+        event_id = row["id"]
+    except (KeyError, TypeError, ValueError):
+        return None
+
+    date_raw = str(row.get("date_start", ""))[:10]
+    try:
+        occurred = datetime.strptime(date_raw, "%Y-%m-%d").replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+    try:
+        violence_type = int(row.get("type_of_violence", 0))
+    except (TypeError, ValueError):
+        violence_type = 0
+    category = UCDP_VIOLENCE_CATEGORY.get(violence_type, "other_violence")
+
+    try:
+        precision = UCDP_WHERE_PRECISION.get(int(row.get("where_prec", 4)), "admin1")
+    except (TypeError, ValueError):
+        precision = "admin1"
+
+    fatalities = None
+    try:
+        fatalities = int(row["best"])  # UCDP best (most likely) estimate
+    except (KeyError, TypeError, ValueError):
+        pass
+
+    return UnifiedEvent(
+        source="ucdp",
+        source_event_id=str(event_id),
+        occurred_at=occurred,
+        lat=lat,
+        lon=lon,
+        geo_precision=precision,
+        country=row.get("country") or None,
+        admin1=row.get("adm_1") or None,
+        location_name=row.get("where_coordinates") or None,
+        category=category,
+        raw_event_type=UCDP_VIOLENCE_TYPE.get(violence_type),
+        actor_a=row.get("side_a") or None,
+        actor_b=row.get("side_b") or None,
+        fatalities=fatalities,
+        headline=row.get("dyad_name") or None,
+        notes=row.get("source_headline") or None,
+        source_urls=[],
+        raw_payload=row,
+    ).with_default_radius()

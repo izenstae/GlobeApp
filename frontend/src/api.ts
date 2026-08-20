@@ -1,4 +1,4 @@
-import type { EventFull, EventLite, FeedHealth, Hotspot } from "./types";
+import type { EventFull, EventLite, FeedHealth, FilterMeta, Hotspot } from "./types";
 
 const BASE = "/api";
 
@@ -11,15 +11,25 @@ async function get<T>(path: string): Promise<T> {
 export async function fetchEvents(params: {
   since?: string;
   category?: string[];
+  country?: string[];
+  actor?: string;
+  weapon?: string[];
   minReliability?: number;
 } = {}): Promise<EventLite[]> {
   const q = new URLSearchParams();
   if (params.since) q.set("since", params.since);
   if (params.minReliability !== undefined)
     q.set("min_reliability", String(params.minReliability));
+  if (params.actor) q.set("actor", params.actor);
   for (const c of params.category ?? []) q.append("category", c);
+  for (const c of params.country ?? []) q.append("country", c);
+  for (const w of params.weapon ?? []) q.append("weapon", w);
   const body = await get<{ events: EventLite[] }>(`/events?${q}`);
   return body.events;
+}
+
+export async function fetchFilterMeta(): Promise<FilterMeta> {
+  return get<FilterMeta>("/meta/filters");
 }
 
 export async function fetchEvent(id: number): Promise<EventFull> {

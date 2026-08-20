@@ -25,11 +25,15 @@ async def serialize_event(session: AsyncSession, event_id: int) -> dict[str, Any
         return None
     row = (
         await session.execute(
-            text("SELECT ST_Y(geom::geometry), ST_X(geom::geometry) FROM events WHERE id = :id"),
+            text(
+                "SELECT ST_Y(geom::geometry), ST_X(geom::geometry), "
+                "ST_Y(origin_geom::geometry), ST_X(origin_geom::geometry) "
+                "FROM events WHERE id = :id"
+            ),
             {"id": event_id},
         )
     ).one()
-    lat, lon = row
+    lat, lon, origin_lat, origin_lon = row
 
     cluster: EventCluster | None = None
     members: list[Event] = []
@@ -85,6 +89,12 @@ async def serialize_event(session: AsyncSession, event_id: int) -> dict[str, Any
             explain_cluster(cluster, members) if cluster and members else None
         ),
         "thermal_corroborated": bool(cluster.thermal_corroborated) if cluster else False,
+        "origin_lat": origin_lat,
+        "origin_lon": origin_lon,
+        "origin_country": event.origin_country,
+        "origin_precision": event.origin_precision,
+        "origin_method": event.origin_method,
+        "origin_confidence": event.origin_confidence,
         "weapons": [
             {
                 "weapon_key": w.weapon_key,
