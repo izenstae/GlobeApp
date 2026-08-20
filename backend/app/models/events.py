@@ -91,6 +91,18 @@ class Event(Base):
     source_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     reliability: Mapped[float | None] = mapped_column(Float)
     raw_payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    # Strike origin for cross-border arc rendering (Phase 6). Populated only by
+    # a stated derivation with method + confidence — never a guess presented as
+    # fact. origin_method='actor_country_inference' means: the source attributed
+    # the strike to a named state force whose country differs from the event
+    # country; the origin is that country's centroid at country-level precision.
+    origin_geom: Mapped[Any | None] = mapped_column(
+        Geography("POINT", srid=4326, spatial_index=False)
+    )
+    origin_precision: Mapped[str | None] = mapped_column(geo_precision_enum)
+    origin_country: Mapped[str | None] = mapped_column(Text)
+    origin_method: Mapped[str | None] = mapped_column(Text)
+    origin_confidence: Mapped[float | None] = mapped_column(Float)
 
     weapons: Mapped[list["EventWeapon"]] = relationship(
         back_populates="event", cascade="all, delete-orphan", lazy="selectin"

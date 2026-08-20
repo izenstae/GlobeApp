@@ -8,13 +8,16 @@ import { useStore } from "../store";
 import type { EventLite } from "../types";
 import { CameraDirector, Pov } from "./CameraDirector";
 import {
+  ARC_GRADIENT,
   GlobePoint,
   ImpactRing,
   SIGNAL_RGB,
+  StrikeArc,
   coreDot,
   eventPoint,
   hotspotPoint,
   recencyBoost,
+  strikeArc,
 } from "./layers";
 
 const IDLE_ROTATE_SPEED = 0.35;
@@ -53,6 +56,8 @@ export default function GlobeView({
   const categoryFilter = useStore((s) => s.categoryFilter);
   const minReliability = useStore((s) => s.minReliability);
   const sinceHours = useStore((s) => s.sinceHours);
+  const scrubEnd = useStore((s) => s.scrubEnd);
+  const showArcs = useStore((s) => s.showArcs);
   const [rings, setRings] = useState<ImpactRing[]>([]);
   const [tick, setTick] = useState(0);
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -75,16 +80,31 @@ export default function GlobeView({
   }, []);
 
   const filteredEvents = useMemo(() => {
-    const cutoff = Date.now() - sinceHours * 3_600_000;
+    void tick;
+    // The visible window ends at the scrub position (or now when live) and
+    // spans the selected window length backwards from there.
+    const end = scrubEnd ?? Date.now();
+    const start = end - sinceHours * 3_600_000;
     const rows: EventLite[] = [];
     for (const event of events.values()) {
       if (categoryFilter.size > 0 && !categoryFilter.has(event.category)) continue;
       if ((event.reliability ?? 0) < minReliability) continue;
-      if (Date.parse(event.occurred_at) < cutoff) continue;
+      const occurred = Date.parse(event.occurred_at);
+      if (occurred < start || occurred > end) continue;
       rows.push(event);
     }
     return rows;
-  }, [events, categoryFilter, minReliability, sinceHours]);
+  }, [events, categoryFilter, minReliability, sinceHours, scrubEnd, tick]);
+
+  const arcs = useMemo(() => {
+    if (!showArcs) return [];
+    const rows: StrikeArc[] = [];
+    for (const event of filteredEvents) {
+      const arc = strikeArc(event);
+      if (arc) rows.push(arc);
+    }
+    return rows;
+  }, [filteredEvents, showArcs]);
 
   const points = useMemo(() => {
     const rows: GlobePoint[] = filteredEvents.map(eventPoint);
@@ -186,6 +206,17 @@ export default function GlobeView({
           `rgba(${SIGNAL_RGB},${(0.75 + 0.25 * (d as { glow: number }).glow).toFixed(2)})`
         }
         labelAltitude={0.006}
+        arcsData={arcs}
+        arcStartLat={(d) => (d as StrikeArc).startLat}
+        arcStartLng={(d) => (d as StrikeArc).startLng}
+        arcEndLat={(d) => (d as StrikeArc).endLat}
+        arcEndLng={(d) => (d as StrikeArc).endLng}
+        arcColor={() => ARC_GRADIENT}
+        arcStroke={0.32}
+        arcAltitudeAutoScale={0.35}
+        arcDashLength={0.035}
+        arcDashGap={0.02}
+        arcDashAnimateTime={0}
         ringsData={rings}
         ringLat={(d) => (d as ImpactRing).lat}
         ringLng={(d) => (d as ImpactRing).lng}

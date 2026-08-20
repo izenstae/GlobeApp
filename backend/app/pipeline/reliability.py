@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Event, EventCluster
 
-# Source tier: ACLED curated highest; GDELT is machine-coded news.
-TIER_BASE = {"acled": 0.70, "gdelt": 0.35}
+# Source tier: ACLED and UCDP are human-curated; GDELT is machine-coded news.
+TIER_BASE = {"acled": 0.70, "ucdp": 0.70, "gdelt": 0.35}
 PRECISION_BONUS = {"exact": 0.05, "settlement": 0.05, "admin2": 0.02}
 THERMAL_BONUS = 0.15
 DOMAIN_BONUS_STEP = 0.05
@@ -81,6 +81,8 @@ def explain_cluster(cluster: EventCluster, events: list[Event]) -> str:
     sources = {e.source for e in events}
     if "acled" in sources:
         parts.append("ACLED-curated record")
+    if "ucdp" in sources:
+        parts.append("UCDP-curated record")
     domains = distinct_domains(events)
     if len(domains) > 1:
         parts.append(f"{len(domains)} independent outlets")

@@ -21,6 +21,7 @@ Full design and requirements: [docs/BUILD_BRIEF.md](docs/BUILD_BRIEF.md).
 | [ACLED](https://acleddata.com) | Curated conflict events: coordinates, dates, actors, fatalities | [ACLED Terms of Use](https://acleddata.com/terms-of-use/). Attribution required; redistribution of the dataset prohibited. Register at the ACLED Access Portal for credentials. |
 | [GDELT](https://www.gdeltproject.org) | Machine-coded global news events, refreshed every 15 minutes | [GDELT Terms](https://www.gdeltproject.org/about.html). Open for research use; no key required for the 15-minute update files. |
 | [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov) | Satellite thermal anomaly detections (VIIRS) | [NASA Earthdata citation policy](https://www.earthdata.nasa.gov/engage/open-data-services-software-policies). Free API key. |
+| [UCDP GED](https://ucdp.uu.se) | Uppsala's curated georeferenced event dataset (monthly candidate releases) | [UCDP terms](https://ucdp.uu.se/downloads/). Free API, no key. Historical baseline + accuracy check, not live. |
 
 **Conflict event data © ACLED, used under their Terms of Use.** The running app
 carries this attribution in its footer, as their terms require.
@@ -43,11 +44,19 @@ because this repo is public. Do not add exceptions.
   - `app/pipeline/` — normalization into a unified event schema,
     spatial-temporal-textual dedup clustering at ingest, weapon gazetteer
     extraction with evidence spans, actor canonicalization onto the ACLED
-    vocabulary, FIRMS thermal corroboration, cluster reliability scoring.
+    vocabulary, FIRMS thermal corroboration, cluster reliability scoring, and
+    cross-border strike-origin inference (country-level, from state-actor
+    attribution, with method and confidence stored on the record).
+  - `GET /analysis/ucdp` — coverage comparison of the live pipeline's output
+    against the UCDP GED baseline for a month (matched = pipeline event within
+    25 km and ±1 day of a UCDP event; criteria stated in the response).
 - **Frontend** — React 18 + Vite + TypeScript, Tailwind, Zustand,
   react-globe.gl. SSE live stream, client-side priority queue, quaternion-slerp
   camera choreography, full user-interrupt control, `prefers-reduced-motion`
-  support.
+  support. Analysis surface: time scrubber with playback, filters by category /
+  country / actor / weapon / reliability floor, and dashed cross-border strike
+  arcs (origins are labeled country-level inferences, toggleable in the status
+  bar).
 
 ## Local setup
 
@@ -67,7 +76,7 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 alembic upgrade head
 
-# 3. Credentials (GDELT needs none; ACLED and FIRMS are optional but recommended)
+# 3. Credentials (GDELT and UCDP need none; ACLED and FIRMS are optional but recommended)
 python -m app.auth.cli setup --provider acled
 python -m app.auth.cli setup --provider firms
 python -m app.auth.cli status
@@ -99,7 +108,11 @@ a live call to ACLED, GDELT, or NASA.
 | 3 — Deduplication | ✅ clustering at ingest, clusters served by default |
 | 4 — Live camera | ✅ SSE, queue, CameraDirector, interrupt, reduced-motion |
 | 5 — Enrichment | ✅ FIRMS corroboration, weapon gazetteer, reliability (NER stage is a documented extension point, not yet trained) |
-| 6 — Analysis surface | ◻ partial: category/reliability/time-window filters; scrubber playback, arcs, and UCDP baseline not yet built |
+| 6 — Analysis surface | ✅ scrubber playback, category/country/actor/weapon/reliability filters, cross-border strike arcs, UCDP baseline + `/analysis/ucdp` |
+
+The one open extension point is the Stage-2 NER weapon extractor (brief §7.2):
+training it honestly requires a hand-corrected corpus, so `extract_weapons()`
+remains the documented seam where its hits would merge with gazetteer hits.
 
 ## License
 

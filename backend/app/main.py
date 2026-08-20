@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import events, health, stream
+from app.api import analysis, events, health, stream
 from app.config import get_settings
 from app.db import dispose_engine
 
@@ -44,3 +44,4 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(events.router)
 app.include_router(stream.router)
+app.include_router(analysis.router)

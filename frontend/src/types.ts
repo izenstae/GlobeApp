@@ -33,6 +33,15 @@ export interface EventLite {
   thermal_corroborated: boolean;
   lat: number;
   lon: number;
+  /** Cross-border strike origin. Never a tracked trajectory: origin_method
+   * states the derivation ('actor_country_inference'), origin_precision is
+   * 'country', and the arc renders with that uncertainty. Null when unknown. */
+  origin_lat: number | null;
+  origin_lon: number | null;
+  origin_country: string | null;
+  origin_precision: GeoPrecision | null;
+  origin_method: string | null;
+  origin_confidence: number | null;
 }
 
 export interface Weapon {
@@ -83,6 +92,19 @@ export interface FeedHealth {
   consecutive_failures: number;
   records_ingested: number;
   credential_status: "active" | "degraded" | "dead" | null;
+}
+
+/** GET /meta/filters: vocabulary that actually occurs in ingested data. */
+export interface WeaponMetaEntry {
+  weapon_key: string;
+  display_name: string;
+  event_count: number;
+}
+
+export interface FilterMeta {
+  countries: string[];
+  actors: string[];
+  weapons: WeaponMetaEntry[];
 }
 
 export interface Hotspot {

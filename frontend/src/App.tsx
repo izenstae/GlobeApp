@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchEvent, fetchEvents, fetchFeedHealth, fetchHotspots } from "./api";
+import { fetchEvent, fetchEvents, fetchFeedHealth, fetchFilterMeta, fetchHotspots } from "./api";
 import { CameraDirector, Pov } from "./globe/CameraDirector";
 import GlobeView from "./globe/Globe";
 import { ImpactRing, impactRing, isPresented, uncertaintyRadiusDeg } from "./globe/layers";
@@ -12,6 +12,7 @@ import EventCard from "./ui/EventCard";
 import FilterPanel from "./ui/FilterPanel";
 import QueueList from "./ui/QueueList";
 import StatusBar from "./ui/StatusBar";
+import TimeScrubber from "./ui/TimeScrubber";
 
 const AUTO_RESUME_MS = 45_000;
 const BASE_DWELL_MS = 8_000;
@@ -43,7 +44,11 @@ export default function App() {
   const queueDepth = useStore((s) => s.queueDepth);
   const selected = useStore((s) => s.selected);
   const showHotspots = useStore((s) => s.showHotspots);
-  const addEvents = useStore((s) => s.addEvents);
+  const replaceEvents = useStore((s) => s.replaceEvents);
+  const countryFilter = useStore((s) => s.countryFilter);
+  const actorFilter = useStore((s) => s.actorFilter);
+  const weaponFilter = useStore((s) => s.weaponFilter);
+  const setFilterMeta = useStore((s) => s.setFilterMeta);
   const select = useStore((s) => s.select);
   const setFeeds = useStore((s) => s.setFeeds);
   const setHotspots = useStore((s) => s.setHotspots);
@@ -54,13 +59,31 @@ export default function App() {
 
   // ---------------------------------------------------------- initial loads
 
+  // Events load whenever a server-side filter changes (country/actor/weapon
+  // need data the light rows don't carry, so the server does the matching).
   useEffect(() => {
-    fetchEvents().then(addEvents).catch(() => {});
+    fetchEvents({
+      country: [...countryFilter],
+      actor: actorFilter || undefined,
+      weapon: [...weaponFilter],
+    })
+      .then(replaceEvents)
+      .catch(() => {});
+  }, [countryFilter, actorFilter, weaponFilter, replaceEvents]);
+
+  useEffect(() => {
     const health = () => fetchFeedHealth().then(setFeeds).catch(() => {});
     health();
     const id = window.setInterval(health, 30_000);
     return () => window.clearInterval(id);
-  }, [addEvents, setFeeds]);
+  }, [setFeeds]);
+
+  useEffect(() => {
+    const meta = () => fetchFilterMeta().then(setFilterMeta).catch(() => {});
+    meta();
+    const id = window.setInterval(meta, 5 * 60_000);
+    return () => window.clearInterval(id);
+  }, [setFilterMeta]);
 
   useEffect(() => {
     if (!showHotspots) return;
@@ -136,7 +159,11 @@ export default function App() {
     }
     stepping.current = false;
     pauseLive();
-    setResumeAt(Date.now() + AUTO_RESUME_MS);
+    // While scrubbing history there is no auto-resume countdown: yanking the
+    // timeline back to live mid-examination would be a surprise.
+    if (useStore.getState().scrubEnd === null) {
+      setResumeAt(Date.now() + AUTO_RESUME_MS);
+    }
   }, [pauseLive, setResumeAt]);
 
   // Auto-resume with a visible countdown so it is never a surprise.
@@ -197,6 +224,7 @@ export default function App() {
       />
       <EmptyState />
       <FilterPanel />
+      <TimeScrubber />
       {selected && <EventCard event={selected} onClose={() => select(null)} />}
       <QueueList queue={queue} onJumpTo={handleJumpTo} />
       <StatusBar

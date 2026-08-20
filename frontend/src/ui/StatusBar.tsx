@@ -49,6 +49,8 @@ export default function StatusBar({
   const streamConnected = useStore((s) => s.streamConnected);
   const showHotspots = useStore((s) => s.showHotspots);
   const toggleHotspots = useStore((s) => s.toggleHotspots);
+  const showArcs = useStore((s) => s.showArcs);
+  const toggleArcs = useStore((s) => s.toggleArcs);
 
   const countdown =
     resumeAt !== null ? Math.max(0, Math.ceil((resumeAt - Date.now()) / 1000)) : null;
@@ -100,6 +102,17 @@ export default function StatusBar({
           aria-pressed={showHotspots}
         >
           thermal overlay {showHotspots ? "on" : "off"}
+        </button>
+
+        <button
+          onClick={toggleArcs}
+          className={`focus:outline-none focus:ring-1 focus:ring-signal ${
+            showArcs ? "text-bone" : "text-muted hover:text-bone"
+          }`}
+          aria-pressed={showArcs}
+          title="Cross-border strike arcs; origins are country-level inferences from actor attribution"
+        >
+          strike arcs {showArcs ? "on" : "off"}
         </button>
 
         <div className="flex flex-wrap items-center gap-x-4">

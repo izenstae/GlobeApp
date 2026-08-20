@@ -140,6 +140,20 @@ export default function EventCard({
         </div>
       </div>
 
+      {event.origin_country && (
+        <div className="mt-3">
+          <div className="text-xs uppercase tracking-wide text-faint">
+            Launch origin — inferred
+          </div>
+          <div className="text-muted italic">{event.origin_country}</div>
+          <div className="font-mono text-xs text-faint">
+            country-level inference from actor attribution
+            {event.origin_confidence !== null &&
+              ` · confidence ${event.origin_confidence.toFixed(2)}`}
+          </div>
+        </div>
+      )}
+
       {(event.actor_a || event.actor_b) && (
         <div className="mt-3 space-y-1">
           <div className="text-xs uppercase tracking-wide text-faint">Actors</div>
